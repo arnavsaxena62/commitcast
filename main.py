@@ -6,6 +6,13 @@ import dotenv
 from getdata import fetch_activity
 from twitter import getTweetsByRepo
 
+import os
+from datetime import datetime
+
+log_dir = "logs"
+os.makedirs(log_dir, exist_ok=True)
+log_file = os.path.join(log_dir, f"{datetime.now().strftime('%Y-%m-%d')}.log")
+
 logger = logging.getLogger(__name__)
 dotenv.load_dotenv()
 
@@ -41,7 +48,7 @@ def main():
     ))
     logging.basicConfig(
         level=logging.DEBUG,
-        handlers=[handler, logging.FileHandler("commitcast.log")],
+        handlers=[handler, logging.FileHandler(log_file)],
         format="%(asctime)s %(levelname)s %(message)s"
     )
     logging.getLogger("urllib3").setLevel(logging.WARNING)
