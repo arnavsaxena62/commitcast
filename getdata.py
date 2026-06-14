@@ -1,42 +1,60 @@
 import requests
 from datetime import datetime
 import pickle
+from llm import diffSummary
+import logging
 
-url = 'https://api.github.com/users/arnavsaxena62/events'
-headers = {
+logger = logging.getLogger(__name__)
+
+GITHUB_URL = 'https://api.github.com/users/arnavsaxena62/events'
+HEADERS = {
     "Accept": "application/vnd.github+json",
-    "X-GitHub-Api-Version":"2026-03-10",
+    "X-GitHub-Api-Version": "2026-03-10",
 }
-query = {"per_page":100}
 
-response = requests.get(url, headers=headers, params=query)
-data = response.json()
+def fetch_activity():
+    response = requests.get(GITHUB_URL, headers=HEADERS, params={"per_page": 100})
+    data = response.json()
+    activity = []
 
-activity = []
+    for i in data:
+        if i["type"] == "PushEvent":
+            before = i["payload"]["before"]
+            head = i["payload"]["head"]
+            repourl = i["repo"]["url"]
+            dt = datetime.strptime(i["created_at"], "%Y-%m-%dT%H:%M:%SZ")
 
-for i in data:
-    if i["type"] in ["PushEvent"]:
-        before = i["payload"]["before"]
-        head = i["payload"]["head"]
-        repourl = i["repo"]["url"]
-        dt = datetime.strptime(i["created_at"], "%Y-%m-%dT%H:%M:%SZ")
+            logger.info(f"processing push event for {i['repo']['name']} at {dt}")
 
-        repoCommitData = requests.get(f"{repourl}/compare/{before}...{head}").json()
-        commit_msg = repoCommitData["base_commit"]["commit"]["message"]
-        patchData = requests.get(repoCommitData["patch_url"]).text
-        repoData = requests.get(repourl).json()
-        repoDescription = repoData["description"]
-        repoName = repoData["name"]
+            repoCommitData = requests.get(f"{repourl}/compare/{before}...{head}").json()
+            patchData = requests.get(repoCommitData["patch_url"]).text
+            repoData = requests.get(repourl).json()
 
-        print(patchData, repoDescription, repoName, commit_msg)
+            commit_msg = repoCommitData["base_commit"]["commit"]["message"]
+            repoDescription = repoData["description"]
+            repoName = repoData["name"]
 
-        activity.append({
-            "reponame" : repoName,
-            "repoDescription" : repoDescription,
-            "datetime": dt,
-            "commitmsg" : commit_msg,
-            "patch" : patchData
-        })
+            logger.info(f"summarising patch for {repoName}: {commit_msg}")
+            patchdescription = diffSummary(patchData)
+            logger.debug(f"summary: {patchdescription}")
 
-with open("example.pkl", "wb") as file:
-    pickle.dump(activity, file)
+            activity.append({
+                "reponame": repoName,
+                "repoDescription": repoDescription,
+                "datetime": dt,
+                "commitmsg": commit_msg,
+                "patch": patchData,
+                "llm_summary": patchdescription
+            })
+
+            logger.info(f"added {repoName} to activity")
+
+    return activity
+
+
+def save_activity(activity, path="example.pkl"):
+    with open(path, "wb") as f:
+        pickle.dump(activity, f)
+    logger.info(f"saved {len(activity)} events to {path}")
+
+
