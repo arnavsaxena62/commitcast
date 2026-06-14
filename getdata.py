@@ -57,4 +57,6 @@ def save_activity(activity, path="example.pkl"):
         pickle.dump(activity, f)
     logger.info(f"saved {len(activity)} events to {path}")
 
-
+if __name__ == "__main__":
+    activity = fetch_activity()
+    save_activity(activity)

@@ -30,6 +30,9 @@ def llm(system, user, model="openrouter/free"):
         )
         time.sleep(0.5)
         result = response.choices[0].message.content
+        if not result:
+            logger.warning("model returned empty content")
+            return None
         logger.debug(f"response: {result}")
         return result
     except Exception as e:
@@ -39,7 +42,7 @@ def llm(system, user, model="openrouter/free"):
 def diffSummary(diff):
     logger.info("summarising diff")
     systemPrompt = "You are a technical summarizer. Given a git diff patch, write a single sentence describing what was actually changed and why, in plain English. Mention the specific file(s) changed. If the change is trivial (typo fix, minor style tweak, config value nudge), prefix with 'trivial:'. Be concise and literal. Do not editorialize."
-    result = llm(systemPrompt, diff)
+    result = llm(systemPrompt, diff[:8000])
     if result is None:
         logger.warning("diffSummary returned None")
     return result
@@ -59,6 +62,6 @@ if __name__ == "__main__":
         logger.info(f"loaded {len(activity)} events")
         print(diffSummary(activity[0]['patch']))
     except FileNotFoundError:
-        logger.error("example.pkl not found — run github.py first")
+        logger.error("example.pkl not found — run getdata.py first")
     except Exception as e:
         logger.error(f"unexpected error: {e}")
