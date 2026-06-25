@@ -20,7 +20,7 @@ def getTweet(activity):
     if not summaries:
         return None
     user_prompt = "\n".join(f"- {s}" for s in summaries)
-    return llm(system=SYSTEM_PROMPT, user=user_prompt, model="qwen/qwen3.6-flash")
+    return llm(system=SYSTEM_PROMPT, user=user_prompt, model="qwen/qwen3-coder:free")
 
 def getTweetsByRepo(activity):
     grouped = defaultdict(list)
