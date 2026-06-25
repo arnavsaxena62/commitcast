@@ -37,7 +37,7 @@ def send_to_telegram(message):
 def main():
     handler = colorlog.StreamHandler()
     handler.setFormatter(colorlog.ColoredFormatter(
-        "%(log_color)s%(asctime)s %(levelname)s%(reset)s %(message)s",
+        "%(log_color)s%(asctime)s [%(levelname)s]%(reset)s %(message)s",
         log_colors={
             "DEBUG": "cyan",
             "INFO": "green",
